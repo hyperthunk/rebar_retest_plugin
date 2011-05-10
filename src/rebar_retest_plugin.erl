@@ -65,6 +65,7 @@ get_opts(Conf) ->
 
 list_dir(Config) ->
     TestDir = rebar_config:get_local(Config, retest.testdir, "retest"),
+    rebar_log:log(info, "ReTest TestDir: ~p~n", [TestDir]),
     case file:list_dir(TestDir) of
         {ok, Dirs} ->
             Targets = [ filename:join(TestDir, D) || D <- Dirs ],
