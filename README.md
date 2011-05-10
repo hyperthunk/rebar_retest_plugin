@@ -2,7 +2,7 @@
 
 This is a rebar plugin that allows users to run ReTest by giving rebar
 a new `retest` command. More information about ReTest is available from
-https://github.com/dizzyd/retest.
+https://github.com/dizzyd/retest
 
 ## Installing
 
