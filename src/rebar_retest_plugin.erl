@@ -44,16 +44,54 @@
 -export([retest/2]).
 
 retest(Config, _AppFile) ->
-    catch(retest_core:run(create_args(Config))).
+    case code:which(retest_core) of
+        non_existing ->
+            rebar_log:log(error, "Retest not found on path!~n", []),
+            {error, not_found};
+        _ ->
+            catch(retest_core:run(create_args(Config)))
+    end.
 
 create_args(Config) ->
-    [get_opt(retest.verbose, Config),
-     get_opt(retest.outdir, Config),
-     get_opt(retest.loglevel, Config),
-     list_dir(Config)].
+    lists:concat([get_opts(Config), list_dir(Config)]).
 
-list_dir(_Config) ->
-    ok.
+get_opts(Conf) ->
+    OptStrings = [ get_opt(K, Conf) || K <- [retest.verbose, 
+                                             retest.outdir, 
+                                             retest.loglevel] ],
+    Opts = [ X || X <- OptStrings, length(X) > 0 ],
+    rebar_log:log(error, "ReTest Options: ~p~n", [Opts]),
+    Opts.
 
+list_dir(Config) ->
+    TestDir = rebar_config:get_local(Config, retest.testdir, "retest"),
+    case file:list_dir(TestDir) of
+        {ok, Dirs} ->
+            Targets = [ filename:join(TestDir, D) || D <- Dirs ],
+            rebar_log:log(error, "ReTest Targets: ~p~n", [Targets]),
+            Targets;
+        _ ->
+            []
+    end.
+
+get_opt(retest.verbose, Config) ->
+    case rebar_config:get_local(Config, retest.verbose, undefined) of
+        true ->
+            "-v";
+        _ ->
+            case rebar_config:is_verbose() of
+                true ->
+                    "-v";
+                _ -> 
+                    ""
+            end
+    end;
+get_opt(retest.loglevel, Config) ->
+    case rebar_config:get_local(Config, retest.loglevel, undefined) of
+        undefined ->
+            "";
+        Other when is_atom(Other) ->
+            atom_to_list(Other)
+    end;
 get_opt(Name, Config) ->
     rebar_config:get_local(Config, Name, "").
