@@ -13,8 +13,10 @@ files() ->
 
 run(_Dir) ->
     ?assertMatch({ok, _}, retest:sh("rebar get-deps compile")),
-    ?assertMatch({ok, _}, retest:sh("rebar retest -v")),
-    ?assert(filelib:is_regular("something.out")),
+    {ok, _Out} = retest:sh("rebar compile retest -v skip_deps=true"),
+    %% retest_log:log(info, "Output: ~p~n", [Out]),
+    [Expected] = filelib:wildcard("*/current/*/something.out"), 
+    ?assert(filelib:is_regular(Expected)),
     ok.
 
 %%
@@ -28,3 +30,4 @@ app(Name, Modules) ->
             {registered, []},
             {applications, [kernel, stdlib]}]},
     io_lib:format("~p.\n", [App]).
+

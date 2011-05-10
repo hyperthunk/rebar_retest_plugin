@@ -3,4 +3,8 @@
 -export([do_something/0]).
 
 do_something() ->
-    file:write("something.out", <<"something.out">>).
+    {ok, Pwd} = file:get_cwd(),
+    io:format("PWD: ~p~n", [Pwd]),
+    file:write_file(filename:join(Pwd, "something.out"), <<"something.out">>).
+
+

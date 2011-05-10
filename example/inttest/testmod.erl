@@ -5,5 +5,6 @@
 files() -> [].
 
 run(_Dir) ->
-    mymod:do_something(),
+    X = mymod:do_something(),
+    retest_log:log(debug, "Result: ~p~n", [X]),
     ok.

@@ -41,7 +41,13 @@
 %% -----------------------------------------------------------------------------
 -module(rebar_retest_plugin).
 
--export([retest/2]).
+-export([retest/2, clean/2]).
+
+clean(Config, _) ->
+    WorkDir = rebar_config:get_local(Config, retest_outdir, "rt.work"),
+    rebar_log:log(info, "Cleaning ~p~n", [WorkDir]),
+    rebar_file_utils:rm_rf(WorkDir),
+    ok.
 
 retest(Config, _AppFile) ->
     case code:which(retest_core) of
@@ -49,34 +55,61 @@ retest(Config, _AppFile) ->
             rebar_log:log(error, "Retest not found on path!~n", []),
             {error, not_found};
         _ ->
-            catch(retest_core:run(create_args(Config)))
+            Path = update_code_path(Config),
+            Res = run(Config),
+            restore_code_path(Path),
+            Res
     end.
+
+run(Config) ->
+    catch(retest_core:run(create_args(Config))).
+
+update_code_path(Config) -> 
+    case rebar_config:get_local(Config, lib_dirs, []) of 
+        [] -> 
+            no_change; 
+        Paths ->
+            OldPath = code:get_path(),
+            Pwd = rebar_utils:get_cwd(),
+            LibPaths = [ filename:join(Pwd, P) || P <- Paths ],
+            %% expand_lib_dirs(Paths, rebar_utils:get_cwd(), []), 
+            ok = code:add_pathsa(LibPaths), 
+            {old, OldPath}
+    end.
+
+restore_code_path(no_change) ->
+    ok;
+restore_code_path({old, Path}) ->
+    true = code:set_path([F || F <- Path, filelib:is_file(F)]),
+    ok.
 
 create_args(Config) ->
     lists:concat([get_opts(Config), list_dir(Config)]).
 
 get_opts(Conf) ->
-    OptStrings = [ get_opt(K, Conf) || K <- [retest.verbose, 
-                                             retest.outdir, 
-                                             retest.loglevel] ],
+    OptStrings = [ get_opt(K, Conf) || K <- [retest_verbose, 
+                                             retest_outdir, 
+                                             retest_loglevel] ],
+    rebar_log:log(debug, "ReTest Pre-Opts: ~p~n", [OptStrings]),
     Opts = [ X || X <- OptStrings, length(X) > 0 ],
-    rebar_log:log(error, "ReTest Options: ~p~n", [Opts]),
+    rebar_log:log(info, "ReTest Options: ~p~n", [Opts]),
     Opts.
 
 list_dir(Config) ->
-    TestDir = rebar_config:get_local(Config, retest.testdir, "retest"),
+	  io:format("Config: ~p~n", [Config]),
+    TestDir = rebar_config:get(Config, retest_testdir, "retest"),
     rebar_log:log(info, "ReTest TestDir: ~p~n", [TestDir]),
     case file:list_dir(TestDir) of
         {ok, Dirs} ->
             Targets = [ filename:join(TestDir, D) || D <- Dirs ],
-            rebar_log:log(error, "ReTest Targets: ~p~n", [Targets]),
+            rebar_log:log(info, "ReTest Targets: ~p~n", [Targets]),
             Targets;
         _ ->
             []
     end.
 
-get_opt(retest.verbose, Config) ->
-    case rebar_config:get_local(Config, retest.verbose, undefined) of
+get_opt(retest_verbose, Config) ->
+    case rebar_config:get_local(Config, retest_verbose, undefined) of
         true ->
             "-v";
         _ ->
@@ -87,12 +120,20 @@ get_opt(retest.verbose, Config) ->
                     ""
             end
     end;
-get_opt(retest.loglevel, Config) ->
-    case rebar_config:get_local(Config, retest.loglevel, undefined) of
+get_opt(retest_loglevel, Config) ->
+    case rebar_config:get_local(Config, retest_loglevel, undefined) of
         undefined ->
             "";
         Other when is_atom(Other) ->
-            atom_to_list(Other)
+            "-l " ++ atom_to_list(Other)
+    end;
+get_opt(retest_outdir, Config) ->
+    case rebar_config:get_local(Config, retest_outdir, undefined) of
+        undefined ->
+            "";
+        Other ->
+            "-o" ++ Other
     end;
 get_opt(Name, Config) ->
-    rebar_config:get_local(Config, Name, "").
+    rebar_config:get(Config, Name, "").
+
