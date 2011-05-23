@@ -99,7 +99,9 @@ list_dir(Config) ->
 	  io:format("Config: ~p~n", [Config]),
     TestDir = rebar_config:get(Config, retest_testdir, "retest"),
     rebar_log:log(info, "ReTest TestDir: ~p~n", [TestDir]),
-    case file:list_dir(TestDir) of
+    ListDir = file:list_dir(TestDir), 
+    rebar_log:log(debug, "ReTest ListDir: ~p~n", [ListDir]),
+    case ListDir of
         {ok, Dirs} ->
             Targets = [ filename:join(TestDir, D) || D <- Dirs ],
             rebar_log:log(info, "ReTest Targets: ~p~n", [Targets]),
@@ -109,7 +111,7 @@ list_dir(Config) ->
     end.
 
 get_opt(retest_verbose, Config) ->
-    case rebar_config:get_local(Config, retest_verbose, undefined) of
+    case rebar_config:get(Config, retest_verbose, undefined) of
         true ->
             "-v";
         _ ->
@@ -121,18 +123,18 @@ get_opt(retest_verbose, Config) ->
             end
     end;
 get_opt(retest_loglevel, Config) ->
-    case rebar_config:get_local(Config, retest_loglevel, undefined) of
+    case rebar_config:get(Config, retest_loglevel, undefined) of
         undefined ->
             "";
         Other when is_atom(Other) ->
             "-l " ++ atom_to_list(Other)
     end;
 get_opt(retest_outdir, Config) ->
-    case rebar_config:get_local(Config, retest_outdir, undefined) of
+    case rebar_config:get(Config, retest_outdir, undefined) of
         undefined ->
             "";
         Other ->
-            "-o" ++ Other
+            "-o " ++ Other
     end;
 get_opt(Name, Config) ->
     rebar_config:get(Config, Name, "").
