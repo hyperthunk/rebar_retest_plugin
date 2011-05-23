@@ -52,7 +52,7 @@ clean(Config, _) ->
 retest(Config, _AppFile) ->
     case code:which(retest_core) of
         non_existing ->
-            rebar_log:log(error, "Retest not found on path!~n", []),
+            rebar_log:log(error, "ReTest not found on path!~n", []),
             {error, not_found};
         _ ->
             Path = update_code_path(Config),
