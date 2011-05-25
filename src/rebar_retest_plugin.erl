@@ -84,7 +84,9 @@ restore_code_path({old, Path}) ->
     ok.
 
 create_args(Config) ->
-    lists:concat([get_opts(Config), list_dir(Config)]).
+    Args = lists:concat([get_opts(Config), list_dir(Config)]),
+    rebar_log:log(debug, "ReTest Argv: ~p~n", [Args]),
+    Args.
 
 get_opts(Conf) ->
     OptStrings = [ get_opt(K, Conf) || K <- [retest_verbose, 
@@ -96,7 +98,6 @@ get_opts(Conf) ->
     Opts.
 
 list_dir(Config) ->
-	  io:format("Config: ~p~n", [Config]),
     TestDir = rebar_config:get(Config, retest_testdir, "retest"),
     rebar_log:log(info, "ReTest TestDir: ~p~n", [TestDir]),
     ListDir = file:list_dir(TestDir), 
@@ -127,7 +128,7 @@ get_opt(retest_loglevel, Config) ->
         undefined ->
             "";
         Other when is_atom(Other) ->
-            "-l " ++ atom_to_list(Other)
+            "-l" ++ atom_to_list(Other)
     end;
 get_opt(retest_outdir, Config) ->
     case rebar_config:get(Config, retest_outdir, undefined) of
