@@ -25,11 +25,15 @@ Using rebar `deps` you may reference the plugin like so:
 Include the plugin (name) in your `rebar.config` in order to make its 
 commands available to rebar. 
 
-    {rebar_plugins, [rebar_dist_plugin]}.
+    {rebar_plugins, [rebar_retest_plugin]}.
 
 You can now run `retest` from rebar:
 
     user@host$ rebar retest -v
+
+For a comprehensive example of how the plugin can be used, you might 
+take a look at the `rebar.config` and retest suites in place 
+[here](https://github.com/hyperthunk/rebar_dist_plugin). 
 
 ## Config
 
